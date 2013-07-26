@@ -45,14 +45,14 @@ def guess_organization():
         org = stdout.strip()
     except:
         org = getpass.getuser()
-    return org.decode("UTF-8")
+    return org.decode()
 
 
 def load_file_template(path):
     """ Load template from the specified filesystem path.
     """
     if not os.path.exists(path):
-        raise ValueError("path does not exist: %s" % path)
+        raise ValueError("path does not exist: {0}".format(path))
     with open(clean_path(path)) as infile:
         template = infile.read()
     return template
@@ -61,10 +61,10 @@ def load_file_template(path):
 def load_package_template(license, header=False):
     """ Load license template distributed with package.
     """
-    filename = 'template-%s-header.txt' if header else 'template-%s.txt'
-    with resource_stream(__name__, filename % license) as licfile:
+    filename = 'template-{0}-header.txt' if header else 'template-{0}.txt'
+    with resource_stream(__name__, filename.format(license)) as licfile:
         content = licfile.read()
-    return content
+    return content.decode()
 
 
 def extract_vars(template):
@@ -72,7 +72,7 @@ def extract_vars(template):
         double curly braces.
     """
     keys = []
-    for match in re.finditer(r"\{\{ (?P<key>\w+) \}\}", template):
+    for match in re.finditer("\{\{ (?P<key>\w+) \}\}", template):
         keys.append(match.groups()[0])
     return keys
 
@@ -83,8 +83,8 @@ def generate_license(template, context):
     """
     for key in extract_vars(template):
         if key not in context:
-            raise ValueError("%s is missing from the template context" % key)
-        template = template.replace("{{ %s }}" % key, context[key])
+            raise ValueError("{0} is missing from the template context".format(key))
+        template = template.replace("{{{{ {0} }}}}".format(key), context[key])
     return template
 
 
@@ -98,7 +98,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate a license')
 
     parser.add_argument('license', metavar='license', nargs="?", choices=LICENSES,
-                       help='the license to generate, one of: %s' % ", ".join(LICENSES))
+                       help='the license to generate, one of: {0}'.format(", ".join(LICENSES)))
     parser.add_argument('--header', dest='header', action="store_true",
                        help='generate source file header for specified license')
     parser.add_argument('-o', '--org', dest='organization', default=guess_organization(),
@@ -108,7 +108,7 @@ def main():
     parser.add_argument('-t', '--template', dest='template_path',
                        help='path to license template file')
     parser.add_argument('-y', '--year', dest='year', type=valid_year,
-                       default="%i" % datetime.date.today().year,
+                       default="{0}".format(datetime.date.today().year),
                        help='copyright year')
     parser.add_argument('--vars', dest='list_vars', action="store_true",
                        help='list template variables for specified license')
@@ -129,10 +129,10 @@ def main():
             try:
                 template = load_package_template(license, header=True)
             except IOError:
-                sys.stderr.write("Sorry, no source headers are available for %s.\n" % args.license)
+                sys.stderr.write("Sorry, no source headers are available for {0}.\n".format(args.license))
                 sys.exit(1)
 
-        content = generate_license(template.decode("UTF-8"), get_context(args))
+        content = generate_license(template, get_context(args))
         sys.stdout.write(content)
 
         sys.exit(0)
@@ -149,11 +149,11 @@ def main():
         var_list = extract_vars(template)
 
         if var_list:
-            sys.stdout.write("The %s license template contains the following variables:\n" % (args.template_path or license))
+            sys.stdout.write("The {0} license template contains the following variables:\n".format(args.template_path or license))
             for v in var_list:
-                sys.stdout.write("  %s\n" % v)
+                sys.stdout.write("  {0}\n".format(v))
         else:
-            sys.stdout.write("The %s license template contains no variables.\n" % (args.template_path or license))
+            sys.stdout.write("The {0} license template contains no variables.\n".format(args.template_path or license))
 
         sys.exit(0)
 
@@ -164,7 +164,7 @@ def main():
     else:
         template = load_package_template(license)
 
-    content = generate_license(template.decode("UTF-8"), get_context(args))
+    content = generate_license(template, get_context(args))
     sys.stdout.write(content)
 
 
